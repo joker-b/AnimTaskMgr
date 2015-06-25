@@ -10,9 +10,9 @@ AnimTaskMgr lets you through tasks into a queue that will execute as fast as it 
 
 Here is a simple "tinkertoy" example.
 
-Lets assume that we have a lot of 3D objects to build at startup time, during which a 3D "spinner" indicates ongoing progress.
+Let's assume that we have a lot of 3D objects to build at startup time, during which a 3D "spinner" indicates ongoing progress.
 
-This example adds one object per cycle of requestAnimationFrame() -- there are alternatives that will be explained further below (for example, building multiple objects per frame). Here is an abbreviated example:
+This example adds one object per cycle of `requestAnimationFrame()` -- there are alternatives that will be explained further below (for example, building multiple objects per frame). Here is some abbreviated code:
 
 	var ATM = new AnimTaskMgr();
 
@@ -48,8 +48,7 @@ This example adds one object per cycle of requestAnimationFrame() -- there are a
 		//
 		// launch a process that will build 200 objects...
 		//
-		function addRandomObject(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
-		{
+		function addOneObject(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
 			if (Count >= 200) {
 				return true; 			// signal that we're done
 			}
@@ -58,15 +57,13 @@ This example adds one object per cycle of requestAnimationFrame() -- there are a
 			newObj.visible = false;
 			objParent.add(newObj);
 		}
-		function objectsReady(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
-		{
+		function objectsReady(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
 			// action to take now that we're done
 			spinner.visible = false;		// hide spinner
 			objParent.visible = true;		// show objects
 			ATM.halt( spinTask );			// kill redundant "spinTask"
 		}
-
-		var buildTask = ATM.launch( addRandomObject, objectsReady );
+		var buildTask = ATM.launch( addOneObject, objectsReady );
 	}
 
 	function animate() {
@@ -81,11 +78,11 @@ For most uses, you can get by with just three simple operations:
 
 1. Create an `AnimTaskManager` object (variable `ATM` in the example)
 2. Use the `launch()` method to start tasks running
-3. call the `animate()` method somewhere within your animation loop.
+3. Call the `animate()` method somewhere within your animation loop.
 
-In the sample, we've used `launch()` to start two tasks: one to spin the "please wait" spinner until we tell it to stop, and `addRandomObject(),` which will explicitly stop itself after 200 cycles. This second tasks also comes with a companion "wrap-up" function, `objectsReady(),` which will trigger automatically after `addRandomObject()` has decided to halt -- this last function displays the accumulated results, hides the spinner, and, since we don't need it any more. halts the spinner process.
+In the sample, we've used `launch()` to start two tasks: one to spin the "please wait" spinner until we tell it to stop, and `addOneObject(),` which will explicitly stop itself after 200 cycles. This second task also comes with a companion "wrap-up" function, `objectsReady(),` which will trigger automatically after `addOneObject()` has decided to halt -- this last function displays the accumulated results, hides the spinner, and, since we don't need it any more. halts the spinner spinning task.
 
-In this case, the wrap-up function is just really wrapping up. Wrap-up functions can also be used to chain animations by making additional `launch()` calls.
+In this case, the wrap-up function really is just  wrapping up. Wrap-up functions can also be used to chain animations by making additional `launch()` calls.
 
 ## Parameters: We Have Them!
 
@@ -105,7 +102,7 @@ where the parameters are:
 
 * `AnimFunc` is our main animation function.
 * `WrapUpFunc` is an optional wrapup function.
-* `Duration` this is a desired duration of animation, in milliseconds (or zero, for infinite)
+* `Duration` this is a desired duration of animation, in milliseconds (or zero, for infinite).
 * `Interp` this is a function that will accept a 0-1 time value and return a 0-1 value, possibly reshaped by splines or other means, to get more complex animation timing (e.g. "slow-in").
 
 Only the `AnimFunc` parameter is required. If you want to specify a `Duration` or `Interp,` be sure to use `null` for `WrapUpFunc` -- likewise, for no `Duration,` use zero and the function will iterate until the power goes out.
@@ -117,7 +114,7 @@ The task manager cannot stop you from doing bad things. So if your animation fun
 Consider this alternative to the example, where we want to let the object builder go as fast as it can (but no faster):
 
 	var objCount = 0;
-	function addObjs(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
+	function addObjects(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
 		while( ((Date.now()-TimeNow)<=6) && (objCount<200) ) {
 			var newObj = build_obj();
 			newObj.position.set(Math.random(),Math.random(),Math.random());
@@ -129,4 +126,8 @@ Consider this alternative to the example, where we want to let the object builde
 			return true; 			// signal that we're done
 		}
 	}
-	ATM.launch( addObjs, objectsReady );
+	ATM.launch( addObjects, objectsReady );
+
+## Interpolators
+
+Details coming soon, prommise.
