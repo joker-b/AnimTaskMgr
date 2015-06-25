@@ -4,7 +4,7 @@
 
 AnimTaskMgr provides a simple way to maintain animation performance in web applications while giving your app a chance to get things done that may have nothing to do with animation.
 
-AnimTaskMgr lets you through tasks into a queue that will execute as fast as it can while still maintaining good frame rate. For each frame, it will execute all the tasks in the queue, or, if it can't complete them within the time constraint, wait until next frame to continue working through the queue. This allows you to freely mix all kinds of tasks into your app without so much need to worry about dropping frames or otherwise providing a "chunky" timing experience.
+AnimTaskMgr lets you toss tasks into a queue that will execute as fast as it can while still maintaining good frame rate. Just fire and forget. For each frame, it will execute all the tasks in the queue; or, if it can't complete them within the time constraint, wait until next frame to continue working through the queue. This allows you to freely mix all kinds of tasks into your app without so much need to worry about dropping frames or otherwise providing a "chunky" timing experience.
 
 ## Typical Use
 
