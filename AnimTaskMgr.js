@@ -25,7 +25,7 @@ function ATTask(AnimFunc,WrapUpFunc,Duration,Interp) { // WrapUp is optional
 	this.count = 0;
 	this.animFunc = AnimFunc;
 	this.wrapFunc = WrapUpFunc;
-	this.duration = Duration; // duration <=0 lasts until halted. otherwise, in milliseconds
+	this.duration = Duration || 0.0; // duration <=0 lasts until halted. otherwise, in milliseconds
 	this.interp = Interp; // Interp - function taks value returns 0-1
 	this.active = true;
 	this.wrapReady = false;
@@ -59,7 +59,7 @@ ATTask.prototype.animate = function() {
 	}
 	haltMe = this.animFunc(now,ti,frameTime,totalTime,this.count);
 	this.count += 1;
-	if ((t>= 1.0) || haltMe) {
+	if ( (t >= 1.0) || (haltMe === true) ) {
 		if ((this.wrapFunc !== undefined)&&(this.wrapFunc)) {
 			this.wrapReady = true; // execute wrapFunc on next ieration
 		} else {
