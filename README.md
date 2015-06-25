@@ -4,13 +4,15 @@
 
 AnimTaskMgr provides a simple way to maintain animation performance in web applications while giving your app a chance to get things done that may have nothing to do with animation.
 
-AnimTaskMgr lwts you through tasks into a queue that will execute as fast as it can while still maintaining good frame rate. For each frame, it will execute all the tasks in teh queue, or, if it can't complete them within the time constraint, wait until next frame to continue working through the queue. This allows you to freely mix all kinds of tasks into your app without so much need to worry about dropping frames or otherwise provideing a "chunky" timing experience.
+AnimTaskMgr lets you through tasks into a queue that will execute as fast as it can while still maintaining good frame rate. For each frame, it will execute all the tasks in the queue, or, if it can't complete them within the time constraint, wait until next frame to continue working through the queue. This allows you to freely mix all kinds of tasks into your app without so much need to worry about dropping frames or otherwise providing a "chunky" timing experience.
 
 ## Typical Use
 
-Here is a simple "tinkertoy example. Lets assume that we have a lot of 3D objects to build at startup time, during which a 3D "spinner" indicates ongoing progress.
+Here is a simple "tinkertoy" example.
 
-This example adds one object per cycle of requestAnimationFrame() -- therea are alternatives that will be explained further below. Here is an abbreviated example:
+Lets assume that we have a lot of 3D objects to build at startup time, during which a 3D "spinner" indicates ongoing progress.
+
+This example adds one object per cycle of requestAnimationFrame() -- there are alternatives that will be explained further below (for example, building multiple objects per frame). Here is an abbreviated example:
 
 	var ATM = new AnimTaskMgr();
 
@@ -24,7 +26,7 @@ This example adds one object per cycle of requestAnimationFrame() -- therea are 
 	    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10 );
 		renderer = new THREE.WebGLRenderer({antialias:true});
 		//
-		// ... any other THREE.js setup ...
+		// ... any other setup ...
 		//
 		// 
 		var spinner = init_spinner(scene,...); // add a "spinner" object while we're waiting for objects
@@ -54,14 +56,14 @@ This example adds one object per cycle of requestAnimationFrame() -- therea are 
 			var newObj = build_obj();
 			newObj.position.set(Math.random(),Math.random(),Math.random());
 			newObj.visible = false;
-			objParent.add(newObjj);
+			objParent.add(newObj);
 		}
 		function objectsReady(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
 		{
 			// action to take now that we're done
-			spinner.visible = false;
-			objParent.visible = true;
-			ATM.halt(spinTask);
+			spinner.visible = false;		// hide spinner
+			objParent.visible = true;		// show objects
+			ATM.halt( spinTask );			// kill redundant "spinTask"
 		}
 
 		var buildTask = ATM.launch( addRandomObject, objectsReady );
@@ -77,9 +79,33 @@ This example adds one object per cycle of requestAnimationFrame() -- therea are 
 
 For most uses, you can get by with just three simple operations:
 
-1. Create an AnimTaskManager object (variable "ATM" in the example)
-2. Use the launch() method to start tasks running
-3. call the animate() method somewhere within your animation loop.
+1. Create an `AnimTaskManager` object (variable `ATM` in the example)
+2. Use the `launch()` method to start tasks running
+3. call the `animate()` method somewhere within your animation loop.
 
-In the sample, we've used launch() to start two tasks: one to spin the spinner until we tell it to stop, and  addRandomObject(), which will explicitly stop itself after 200 cycles. This second tasks also comes with a companion "wrap-up" function, objectsReady(), which will trigger after addRandomObject() has decided to halt -- this last function displays the accumulated results, hides the spinner, and, since we don't need it any more. halts the spinner process.
+In the sample, we've used `launch()` to start two tasks: one to spin the "please wait" spinner until we tell it to stop, and `addRandomObject(),` which will explicitly stop itself after 200 cycles. This second tasks also comes with a companion "wrap-up" function, `objectsReady(),` which will trigger automatically after `addRandomObject()` has decided to halt -- this last function displays the accumulated results, hides the spinner, and, since we don't need it any more. halts the spinner process.
 
+In this case, the wrap-up function is just really wrapping up. Wrap-up functions can also be used to chain animations by making additional `launch()` calls.
+
+## Parameters: We Have Them!
+
+The functions we assign as paramaters to launch() expect several parameters:
+
+* `TimeNow` reports a time in milliseconds that marks when the function execution begins.
+* `RelativeTime` -- if the function has a specified duration (more on this later), then `RelativeTime` will be a value ranged from zero to one indicating the overall place in the animation. This value is not clamps to the [0-1] range, and may be shaped by interpolators (again, more later). Otherwise zero.
+* `SinceLastFrameTime` is the time, in milliseconds, since this function was last executed. Note that this might be different than the time between `animationRequestFrame()` calls since the task manager can spread tasks across multiple frames if needed to maintain frame rate.
+* `SinceStartTime` is the time elapsed, in milliseconds, since the function was `launch()`'ed.
+* `Count` counts the number of times this function has been executed (starting at zero).
+
+We only used some of the parameters of `launch()` in this example. A complete call would be:
+
+	ATM.launch(AnimFunc,WrapUpFunc,Duration,Interp);
+
+where the parameters are:
+
+* `AnimFunc` is our main animation function.
+* `WrapUpFunc` is an optional wrapup function.
+* `Duration` this is a desired duration of animation, in milliseconds (or zero, for infinite)
+* `Interp` this is a function that will accept a 0-1 time value and return a 0-1 value, possibly reshaped by splines or other means, to get more complex animation timing (e.g. "slow-in").
+
+Only the `AnimFunc` parameter is required. If you want to specify a `Duration` or `Interp,` be sure to use `null` for `WrapUpFunc` -- likewise, for no `Duration,` use zero and the function will iterate until the power goes out.
