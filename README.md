@@ -114,7 +114,7 @@ Only the `AnimFunc` parameter is required. If you want to specify a `Duration` o
 
 The task manager cannot stop you from doing bad things. So if your animation function contains long processes, well -- refactor them! It's up to you to ensure that inidividual tasks can execute in reasonable amounts of time -- I recommend chunks of 6ms or less. This will give `requestAnimationFrame()` space to do its work.
 
-Consider this alternative to teh example, where we want to let the object builder go as fast as it can (but no faster):
+Consider this alternative to the example, where we want to let the object builder go as fast as it can (but no faster):
 
 	var objCount = 0;
 	function addObjs(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
@@ -123,8 +123,9 @@ Consider this alternative to teh example, where we want to let the object builde
 			newObj.position.set(Math.random(),Math.random(),Math.random());
 			newObj.visible = false;
 			objParent.add(newObj);
+			objCount += 1;
 		}
-		if (Count >= 200) {
+		if (objCount >= 200) {
 			return true; 			// signal that we're done
 		}
 	}
