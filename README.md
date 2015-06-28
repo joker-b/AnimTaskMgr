@@ -159,5 +159,5 @@ Details coming soon, promise. Any function that takes a 0-1 value and returns a 
 
 ### Why not use Tween.js or (insert package name) instead of AnimTaskMgr?
 
-AnimTaskMgr cam out of a desire to use timed tasks for losts of things that don't really need animation. You can use Tween.js's update() for this, but you carry all the baggage of Tween's parameter update mechanism, which I didn't need. Six of one, half-dozen of the other.
+AnimTaskMgr cam out of a desire to provide a way to trigger events based on any kind of timing: frame counting, elapsed time, time per frame, etc. You can use Tween.js's update() for some of this, but you carry all the baggage of Tween's parameter update mechanism, which I didn't need. Six of one, half-dozen of the other. I like Tween.js too, sometimes.
 
