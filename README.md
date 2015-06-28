@@ -6,13 +6,15 @@ AnimTaskMgr provides a simple way to maintain animation performance in web appli
 
 AnimTaskMgr lets you toss tasks into a queue that will execute as fast as it can while still maintaining good frame rate. Launch you task using the manager and it will do the rest -- just fire and forget. For each frame, it will execute all the tasks in the queue; or, if it can't complete them within the time constraint, wait until next frame to continue working through the queue. This allows you to freely mix all kinds of tasks into your app without so much need to worry about dropping frames or otherwise providing a "chunky" timing experience.
 
+Finally, AnimTskManager provides a schemes for tweaking the timing "feel" of animation activities and allows you to chain all types of activities together into complex actions like sliding a UI element into place, playing a sound and then blinking to indicate its readiness.
+
 ## Typical Use
 
 Here is a simple "tinkertoy" example.
 
 Let's assume that we have a lot of 3D objects to build at startup time, during which a 3D "spinner" indicates ongoing progress.
 
-This example adds one object per cycle of `requestAnimationFrame()` -- there are alternatives that will be explained further below (for example, building multiple objects per frame). Here is some abbreviated code:
+Below is some abbreviated code. It shows a typical example using THREE.js (THREE.js is not at all required -- all animation schemes benefit). You'll see we start the `AnimTskMgr` then add a couple of tasks to it and just let the manager handle the grunt work during our animation loop. Done.
 
 	var ATM = new AnimTaskMgr();
 
@@ -43,7 +45,7 @@ This example adds one object per cycle of `requestAnimationFrame()` -- there are
 			spinner.rotation.x += 0.001;
 			spinner.rotation.y += 0.002;
 		}
-		var spinTask = ATM.launch( spinSpinner );
+		var spinTask = ATM.launch( spinSpinner );	// remember this task for later...
 
 		//
 		// launch a process that will build 200 objects...
@@ -63,7 +65,7 @@ This example adds one object per cycle of `requestAnimationFrame()` -- there are
 			objParent.visible = true;		// show objects
 			ATM.halt( spinTask );			// kill redundant "spinTask"
 		}
-		var buildTask = ATM.launch( addOneObject, objectsReady );
+		ATM.launch( addOneObject, objectsReady ); // ignore returned task, it will halt itself
 	}
 
 	function animate() {
@@ -80,7 +82,7 @@ For most uses, you can get by with just three simple operations:
 2. Use the `launch()` method to start tasks running
 3. Call the `animate()` method somewhere within your animation loop.
 
-In the sample, we've used `launch()` to start two tasks: one to spin the "please wait" spinner until we tell it to stop, and `addOneObject(),` which will explicitly stop itself after 200 cycles. This second task also comes with a companion "wrap-up" function, `objectsReady(),` which will trigger automatically after `addOneObject()` has decided to halt -- this last function displays the accumulated results, hides the spinner, and, since we don't need it any more. halts the spinner spinning task.
+In the sample, we've used `launch()` to start two tasks: one to spin the "please wait" spinner until we tell it to stop, and `addOneObject(),` which will explicitly stop itself after 200 cycles. This second task also comes with a companion "wrap-up" function, `objectsReady(),` which will trigger automatically after `addOneObject()` has decided to halt -- this last function displays the accumulated objects, hides the spinner, and, since we don't need it any more. halts the spinner's spin task.
 
 In this case, the wrap-up function really is just  wrapping up. Wrap-up functions can also be used to chain animations by making additional `launch()` calls.
 
@@ -127,6 +129,29 @@ Consider this alternative to the example, where we want to let the object builde
 		}
 	}
 	ATM.launch( addObjects, objectsReady );
+
+The usual caveats about Javascript garbage collection apply here -- try to avoid creating new objects in your AnimFunc, including additoional function() declarations, etc. They will cause a new allocation every frame, and you will pay in performance jankiness when the GC decides to discard things.
+
+## Chaining tasks
+
+Series of tasks can be chained together by using the .chain() method on individual tasks.
+
+	var task1 = AnimTaskMgr.launch();
+	var task2 = task1.chain();
+
+The .chain() method taks exactly the same arguments as the .launch method.
+
+Since both methods return the new task, so it's strightforward to build up longer sequences by dot-chaining:
+
+	AnimTaskMgr.launch().chain().chain.chain();
+
+Will run the four tasks in sequence. Of course, if any tasks has an infinite duration, none of its chained children would ever execute! For this reason, if .chain() is executed on a task that does have an infinite diuration, the first task will immediately chain on the next animation frame, just as if its duration were complete.
+
+### WrapUp functions
+
+When a task has a WrapupFunc defined, the WrapUp will execute on the next animation frame after the task completes. It will also execute before any chained task begins.
+
+This interplay between chaining and wrapup functions are the only way to get the wrapup function to execute if you've assigned it to an otherwise-infinite task.
 
 ## Interpolators
 

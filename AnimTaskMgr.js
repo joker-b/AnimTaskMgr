@@ -14,24 +14,31 @@
 // WrapUpFunc(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
 //		no return value
 //		no nead for relative (0-1) time -- it's assumed to be 1
-
-// TODO should there be a startup too???
+// Interp -- taks 0-1 emits an interpolated value (usually 0-1 but not required)
+//		-- interpolators from Tween.js etc ca be used too.
 
 'use strict';
 
-function ATTask(AnimFunc,WrapUpFunc,Duration,Interp) { // WrapUp is optional
+//
+// Because ATask objects should only be created by the AnimTaskMgr launch() method,
+//		we can make some pretty safe assumptions about validitiy of data, thus saving
+//		execution time by skipping error-checking.
+//
+function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Parent) { // WrapUp is optional
 	this.start = Date.now();
 	this.prev = this.start;
 	this.count = 0;
-	this.animFunc = AnimFunc;
-	this.wrapFunc = WrapUpFunc;
+	this.animFunc = AnimFunc || null;
+	this.wrapFunc = WrapUpFunc || null;
 	this.duration = Duration || 0.0; // duration <=0 lasts until halted. otherwise, in milliseconds
-	this.interp = Interp; // Interp - function taks value returns 0-1
+	this.interp = Interp || null; // Interp - function taks value returns 0-1
+	this.parent = Parent;
 	this.active = true;
 	this.wrapReady = false;
+	this.chainTask = null;
 }
 
-ATTask.prototype.animate = function() {
+ATask.prototype.animate = function() {
 	if (!this.active) {
 		return;
 	}
@@ -51,48 +58,83 @@ ATTask.prototype.animate = function() {
 		ti = t;
 	}
 	if (this.wrapReady) {
-		if ((this.wrapFunc !== undefined)&&(this.wrapFunc)) {
+		if (this.wrapFunc) {
 			this.wrapFunc(now,ti,frameTime,totalTime,this.count);
 		}
-		this.active = false;
+		this.wrapReady = false;
+		this.wrapFunc = null;
+		this._halt();
 		return;
 	}
-	haltMe = this.animFunc(now,ti,frameTime,totalTime,this.count);
+	if (this.animFunc) {
+		haltMe = this.animFunc(now,ti,frameTime,totalTime,this.count);
+	} else {
+		haltMe = false;
+	}
 	this.count += 1;
 	if ( (t >= 1.0) || (haltMe === true) ) {
-		if ((this.wrapFunc !== undefined)&&(this.wrapFunc)) {
-			this.wrapReady = true; // execute wrapFunc on next ieration
-		} else {
-			this.active = false;  // otherwise halt immediately
-		}
+		this._halt();
 	}
 };
 
-///////////
+ATask.prototype.chain = function(AnimFunc,WrapUpFunc,Duration,Interp) {
+	this.chainTask = new ATask(AnimFunc,WrapUpFunc,Duration,Interp,this.parent);
+	return this.chainTask;
+};
+
+ATask.prototype._halt = function() {
+	if (this.wrapFunc) {  // if there's a wrapFunc to that first
+		this.wrapReady = true; // execute wrapFunc on next ieration
+		return;
+	} 
+	this.active = false;  // otherwise halt immediately
+	if (this.chainTask) {
+		this.parent.addChainTask(this.chainTask); // TODO how to deal with params?????
+	}
+};
+
+ATask.prototype.halt = function() {
+	this.chainTask = null; // kill any chained task(s)
+	this._halt();
+};
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 function AnimTaskMgr() {
 	this.tasks = [];
+	this.chainList = [];
 	this.N = 0;
 	this.limit = 12; // 12 ms
 	this.selfCleaning = true;
 	//
 	this._t = 0;
+	this._I = 0; 
 }
 
+AnimTaskMgr.prototype.addTask = function(Tk) {
+	this.tasks.push(Tk);
+	return Tk; // return the new tasks in case the clinet wants to mess with it
+};
+
+AnimTaskMgr.prototype.addChainTask = function(Tk) {
+	// chained tasks go into this list so that they don't execute until NEXT frame
+	this.chainList.push(Tk); // nothin returned
+};
+
 AnimTaskMgr.prototype.launch = function(AnimFunc,WrapUpFunc,Duration,Interp) {
-	var tk = new ATTask(AnimFunc,WrapUpFunc,Duration);
-	this.tasks.push(tk);
-	return tk; // return the new tasks in case the clinet wants to mess with it
+	return this.addTask(new ATask(AnimFunc,WrapUpFunc,Duration,Interp,this));
 };
 
 AnimTaskMgr.prototype.halt = function(TK) {
 	// should we execute the wrapup function?
-	var i = this.tasks.indexOf(TK);
-	if (i<0) {
+	this._I = this.tasks.indexOf(TK);
+	if (this._I<0) {
 		return false; // oops
 	}
-	this.tasks.splice(i,1); // remove
-	if (this.N > i) { // adjust our N counter if its target has moved
+	this.tasks.splice(this._I,1); // remove
+	if (this.N > this._I) { // adjust our N counter if its target has moved
 		this.N -= 1;
 	}
 	return true;	// success
@@ -100,7 +142,7 @@ AnimTaskMgr.prototype.halt = function(TK) {
 
 AnimTaskMgr.prototype.animate = function() {
 	this._t = Date.now();
-	for (var i=0; i<this.tasks.length; i+=1) {
+	for (this._I=0; this._I<this.tasks.length; this._I+=1) {
 		if ((Date.now()-this._t) > this.limit) {
 			return;
 		}
@@ -113,6 +155,11 @@ AnimTaskMgr.prototype.animate = function() {
 	if (this.selfCleaning) {
 		this.autoClean();
 	}
+	// now add any pending chained tasks
+	for (this._I=0; this._I<this.chainList.length; this._I+=1) {
+		this.addTask(this.chainList[this._I]);
+	}
+	this.chainList.splice(0);
 };
 
 AnimTaskMgr.prototype.autoClean = function() {
