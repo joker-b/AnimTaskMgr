@@ -111,10 +111,13 @@ Only the `AnimFunc` parameter is required. If you want to specify a `Duration` o
 
 ## Your AnimFunc
 
-The task manager cannot stop you from doing bad things. So if your animation function contains long processes, well -- refactor them! It's up to you to ensure that inidividual tasks can execute in reasonable amounts of time -- I recommend chunks of 6ms or less. This will give `requestAnimationFrame()` space to do its work.
+The AnimFunc does whatever tasks you set it nibble-sized chunks. These tasks can be anything: animation on-screen, physics evaluations, audio processing, parts of a game AI, etc. By breaking your tasks into bite-sized chunks, you help ensure a smooth, responsive experience for the end user. An old truism from the game development world also applies to all modern web apps: *There are no good games with a bad frame rate.*
 
-Consider this alternative to the example, where we want to let the object builder go as fast as it can (but no faster):
+If an AnimFunc completes some larger task that might take many frames, return `true` to tell the AnimTaskMgr that the overall task is complete.
 
+Consider this alternative to the first example, where we want to let the object builder go as fast as it can (but no faster):
+
+	// var objParent = new THREE.Object3D(); // already dedclared...
 	var objCount = 0;
 	function addObjects(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
 		while( ((Date.now()-TimeNow)<=6) && (objCount<200) ) {
@@ -130,32 +133,67 @@ Consider this alternative to the example, where we want to let the object builde
 	}
 	ATM.launch( addObjects, objectsReady );
 
-The usual caveats about Javascript garbage collection apply here -- try to avoid creating new objects in your AnimFunc, including additional function() declarations, etc. They will cause a new allocation every frame, and you will pay in performance jankiness when the GC decides to discard things.
+Here we give ourselves a 6 millisecond limit, and add as many new chunks to "objParent" as we can in the time alloted.
+
+### Prudent Task Construction
+
+The task manager cannot stop you from doing bad things. So if your animation function contains long processes or ones that do a lot of excessive memory allocation/deallocations, well -- refactor them! It's up to you to ensure that inidividual tasks can execute in reasonable amounts of time -- I recommend chunks of 6ms or less. This will give `requestAnimationFrame()` space to do its work.
+
+In the example above, we're adding objects but they are *persistent* objects -- so they're not subject to garbage collection during the loop. All the usual caveats about Javascript garbage collection avoidance apply here: try not to create new temporary objects in your AnimFunc, including additional function() declarations, etc. They will cause a new allocation/de-allocation every frame, and you will pay in performance jankiness when the GC decides to discard things.
+
+### `AnimFunc === null`
+
+You *can* pass `null` as the AnimFunc -- a *null task* will start. Null tasks provide a way to create arbitrary delays, and they may still have a wrapup function, and can be chained.
+
+It's possible to create an infinite null task, say `ATM.launch(null,null,0.0)` but it's hard to imagine cases where this is really useful. The task can be used to .chain() new tasks but it would really be better to just `.launch()` them instead.
 
 ## Chaining tasks
 
-Series of tasks can be chained together by using the .chain() method on individual tasks.
+Series of tasks can be chained together by using the `.chain()` method on individual tasks.
 
 	var task1 = AnimTaskMgr.launch();
 	var task2 = task1.chain();
 
-The .chain() method taks exactly the same arguments as the .launch method.
+The `.chain()` method taks exactly the same arguments as the `.launch()` method. *If you don't specify an interpolator for a chained task, it will inherit the interpolator of its parent task.*
 
 Since both methods return the new task, so it's strightforward to build up longer sequences by dot-chaining:
 
-	AnimTaskMgr.launch().chain().chain.chain();
+	AnimTaskMgr.launch(FuncA,null,5.0)
+				.chain(FuncB,null,1.0)
+				.chain(FuncC,null,2.0)
+				.chain(FuncD,WrapABCD,5.0);
 
-Will run the four tasks in sequence. Of course, if any tasks has an infinite duration, none of its chained children would ever execute! For this reason, if .chain() is executed on a task that does have an infinite diuration, the first task will immediately chain on the next animation frame, just as if its duration were complete.
+Will run the four tasks in sequence. Of course, if any task runs infinitely, none of its chained children would ever execute! For this reason, if `.chain()` is executed on a task that *does* have an infinite duration (e.g., `Duration === 0`), then the parent task will immediately stop and chain on the next animation frame, just as if its duration were complete.
 
-### WrapUp functions
+### WrapUp Functions
 
 When a task has a WrapupFunc defined, the WrapUp will execute on the next animation frame after the task completes. It will also execute before any chained task begins.
 
-This interplay between chaining and wrapup functions is the only way to get the wrapup function to execute if you've assigned it to an otherwise-infinite task.
+### Halting Tasks and Manager Cleaning
+
+You can halt tasks a few ways. Tasks that return `true` will halt themselves, but on occasion you may need to halt them from another part of your code, say in response to an event.
+
+If you have a task "Tk" running on AnimTaskMgr "ATM," you could halt it any of these canonical ways:
+
+	Tk.halt();					// typical
+	Tk.chain(function() {});	// for infinite tasks with a wrapup function
+	ATM.discard(Tk);			// "hard stop": don't execute any wrapup or chain functions
+
+Typically after every frame, the AnimTaskManager will discard any halted or expired tasks. If you set ATM.selfCleaning to false, you will have to call ATM.autoClean() yourself from time to time. This can sometimes be more efficient if there are *lots* of regular task changes.
+
+#### A Word on Synchronization
+
+Tasks that launch together may not *always* complete together, depending on externalities -- interupts, other tasks that take too long and push their neighbors into the next frame, etc. If you need close synchromization -- if the result of some task depends upon some other task that's not directly in its own chain -- you'll need to apply the same sorts of strategies you would with any other sort of asychronous web process, because that's really what tasks are.
 
 ## Interpolators
 
 Details coming soon, promise. Any function that takes a 0-1 value and returns a similar value will work! You can also apply Tween.js interpolators.
+
+### Interpolator Inheritance
+
+As mentioned earlier, if you don't specify an interpolator for a `.chain()` task, it will inherit the interpolator of its immediate parent task. This lets you set the interpolate once at the start and keep consistency throughout.
+
+You can also set a default interpolator for the AnimTaskMgr itself, by using the `.defaultInterpolator()` method. All new tasks added via `.launch()` that don't specify an interpolator will inherit the default you specify.
 
 ### Why not use Tween.js or (insert package name) instead of AnimTaskMgr?
 

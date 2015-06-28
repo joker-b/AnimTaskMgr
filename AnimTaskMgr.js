@@ -24,7 +24,7 @@
 //		we can make some pretty safe assumptions about validitiy of data, thus saving
 //		execution time by skipping error-checking.
 //
-function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Parent) { // WrapUp is optional
+function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager) { // WrapUp is optional
 	this.start = Date.now();
 	this.prev = this.start;
 	this.count = 0;
@@ -32,7 +32,7 @@ function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Parent) { // WrapUp is option
 	this.wrapFunc = WrapUpFunc || null;
 	this.duration = Duration || 0.0; // duration <=0 lasts until halted. otherwise, in milliseconds
 	this.interp = Interp || null; // Interp - function taks value returns 0-1
-	this.parent = Parent;
+	this.mgr = Manager;
 	this.active = true;
 	this.wrapReady = false;
 	this.chainTask = null;
@@ -78,7 +78,8 @@ ATask.prototype.animate = function() {
 };
 
 ATask.prototype.chain = function(AnimFunc,WrapUpFunc,Duration,Interp) {
-	this.chainTask = new ATask(AnimFunc,WrapUpFunc,Duration,Interp,this.parent);
+	var terp = Interp || this.interp;
+	this.chainTask = new ATask(AnimFunc,WrapUpFunc,Duration,terp,this.mgr);
 	return this.chainTask;
 };
 
@@ -89,7 +90,7 @@ ATask.prototype._halt = function() {
 	} 
 	this.active = false;  // otherwise halt immediately
 	if (this.chainTask) {
-		this.parent.addChainTask(this.chainTask); // TODO how to deal with params?????
+		this.mgr.addChainTask(this.chainTask);
 	}
 };
 
@@ -109,6 +110,8 @@ function AnimTaskMgr() {
 	this.limit = 12; // 12 ms
 	this.selfCleaning = true;
 	//
+	this.defInterp = null;
+	//
 	this._t = 0;
 	this._I = 0; 
 }
@@ -124,19 +127,31 @@ AnimTaskMgr.prototype.addChainTask = function(Tk) {
 };
 
 AnimTaskMgr.prototype.launch = function(AnimFunc,WrapUpFunc,Duration,Interp) {
-	return this.addTask(new ATask(AnimFunc,WrapUpFunc,Duration,Interp,this));
+	var terp = Interp || this.defInterp;
+	return this.addTask(new ATask(AnimFunc,WrapUpFunc,Duration,terp,this));
 };
 
-AnimTaskMgr.prototype.halt = function(TK) {
-	// should we execute the wrapup function?
-	this._I = this.tasks.indexOf(TK);
-	if (this._I<0) {
-		return false; // oops
+AnimTaskMgr.prototype.defaultInterpolator = function(Interp) {
+	if (Interp !== undefined) {
+		this.defInterp = Interp;
 	}
+	return this.defInterp;
+};
+
+AnimTaskMgr.prototype._discard = function(TK) {
 	this.tasks.splice(this._I,1); // remove
 	if (this.N > this._I) { // adjust our N counter if its target has moved
 		this.N -= 1;
 	}
+};
+
+AnimTaskMgr.prototype.discard = function(TK) {
+	// removes immediately, which means the task, wrapup, and chain
+	this._I = this.tasks.indexOf(TK);
+	if (this._I<0) {
+		return false; // oops
+	}
+	this._discard(TK);
 	return true;	// success
 };
 
@@ -166,7 +181,7 @@ AnimTaskMgr.prototype.autoClean = function() {
 	var pad = this.tasks.slice(0);
 	for (var i=0; i<pad.length; i+=1) {
 		if (!pad[i].active) {
-			this.halt(pad[i]);
+			this._discard(pad[i]);
 		}
 	}
 };
