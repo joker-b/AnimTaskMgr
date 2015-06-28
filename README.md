@@ -130,7 +130,7 @@ Consider this alternative to the example, where we want to let the object builde
 	}
 	ATM.launch( addObjects, objectsReady );
 
-The usual caveats about Javascript garbage collection apply here -- try to avoid creating new objects in your AnimFunc, including additoional function() declarations, etc. They will cause a new allocation every frame, and you will pay in performance jankiness when the GC decides to discard things.
+The usual caveats about Javascript garbage collection apply here -- try to avoid creating new objects in your AnimFunc, including additional function() declarations, etc. They will cause a new allocation every frame, and you will pay in performance jankiness when the GC decides to discard things.
 
 ## Chaining tasks
 
@@ -151,8 +151,13 @@ Will run the four tasks in sequence. Of course, if any tasks has an infinite dur
 
 When a task has a WrapupFunc defined, the WrapUp will execute on the next animation frame after the task completes. It will also execute before any chained task begins.
 
-This interplay between chaining and wrapup functions are the only way to get the wrapup function to execute if you've assigned it to an otherwise-infinite task.
+This interplay between chaining and wrapup functions is the only way to get the wrapup function to execute if you've assigned it to an otherwise-infinite task.
 
 ## Interpolators
 
-Details coming soon, prommise.
+Details coming soon, promise. Any function that takes a 0-1 value and returns a similar value will work! You can also apply Tween.js interpolators.
+
+### Why not use Tween.js or (insert package name) instead of AnimTaskMgr?
+
+AnimTaskMgr cam out of a desire to use timed tasks for losts of things that don't really need animation. You can use Tween.js's update() for this, but you carry all the baggage of Tween's parameter update mechanism, which I didn't need. Six of one, half-dozen of the other.
+
