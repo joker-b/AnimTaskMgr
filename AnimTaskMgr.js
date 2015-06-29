@@ -36,6 +36,10 @@ function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager) { // WrapUp is optio
 	this.active = true;
 	this.wrapReady = false;
 	this.chainTask = null;
+	//
+	this.now = 0;
+	this.totalTime = 0;
+	this.frameTime = 0;
 }
 
 ATask.prototype.animate = function() {
@@ -43,14 +47,14 @@ ATask.prototype.animate = function() {
 		return;
 	}
 	var t, ti, haltMe;
-	var now = Date.now();
-	var totalTime = now - this.start;
-	var frameTime = now - this.prev;
-	this.prev = now;
+	this.tNow = Date.now();
+	this.tTotal = this.tNow - this.start;
+	this.tFrame = this.tNow - this.tPrev;
+	this.tPrev = this.tNow;
 	if (this.duration>0) {
-		t = totalTime/this.duration;
+		t = this.tTotal/this.duration;
 	} else {
-		t = 0.0; // for now
+		t = 0.0; // for tNow
 	}
 	if ((this.interp !== undefined)&&(this.interp)) {
 		ti = this.interp(t); // sloin, gamma, etc.
@@ -59,7 +63,7 @@ ATask.prototype.animate = function() {
 	}
 	if (this.wrapReady) {
 		if (this.wrapFunc) {
-			this.wrapFunc(now,ti,frameTime,totalTime,this.count);
+			this.wrapFunc(this.tNow, ti, this.tFrame, this.tTotal, this.count);
 		}
 		this.wrapReady = false;
 		this.wrapFunc = null;
@@ -67,7 +71,7 @@ ATask.prototype.animate = function() {
 		return;
 	}
 	if (this.animFunc) {
-		haltMe = this.animFunc(now,ti,frameTime,totalTime,this.count);
+		haltMe = this.animFunc(this.tNow, ti, this.tFrame, this.tTotal,this.count);
 	} else {
 		haltMe = false;
 	}
@@ -110,11 +114,20 @@ function AnimTaskMgr() {
 	this.limit = 12; // 12 ms
 	this.selfCleaning = true;
 	//
+	this.paused = false;
+	//
 	this.defInterp = null;
 	//
 	this._t = 0;
 	this._I = 0; 
 }
+
+AnimTaskMgr.prototype.pause = function() {
+	this.paused = true;
+};
+AnimTaskMgr.prototype.resume = function() {
+	this.paused = true;
+};
 
 AnimTaskMgr.prototype.addTask = function(Tk) {
 	this.tasks.push(Tk);
@@ -156,10 +169,13 @@ AnimTaskMgr.prototype.discard = function(TK) {
 };
 
 AnimTaskMgr.prototype.animate = function() {
+	if (this.paused) {
+		return;
+	}
 	this._t = Date.now();
 	for (this._I=0; this._I<this.tasks.length; this._I+=1) {
 		if ((Date.now()-this._t) > this.limit) {
-			return;
+			break;
 		}
 		if (this.N >= this.tasks.length) {
 			this.N = 0;
@@ -178,12 +194,13 @@ AnimTaskMgr.prototype.animate = function() {
 };
 
 AnimTaskMgr.prototype.autoClean = function() {
-	var pad = this.tasks.slice(0);
-	for (var i=0; i<pad.length; i+=1) {
-		if (!pad[i].active) {
-			this._discard(pad[i]);
+	var scratch = [];
+	for (var i=0; i<this.tasks.length; i+=1) {
+		if (this.tasks[i].active) {
+			scratch.push(this.tasks[i]);
 		}
 	}
+	this.tasks = scratch;
 };
 
 /////////////////// eof ///

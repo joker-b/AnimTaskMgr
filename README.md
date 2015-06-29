@@ -2,11 +2,15 @@
 
 ## An Animation-Friendly Task Dispatcher for the Web
 
-AnimTaskMgr provides a simple way to maintain animation performance in web applications while giving your app a chance to get things done that may have nothing to do with animation.
+### Because *there are no good apps with a bad frame rate*
 
-AnimTaskMgr lets you toss tasks into a queue that will execute as fast as it can while still maintaining good frame rate. Launch you task using the manager and it will do the rest -- just fire and forget. For each frame, it will execute all the tasks in the queue; or, if it can't complete them within the time constraint, wait until next frame to continue working through the queue. This allows you to freely mix all kinds of tasks into your app without so much need to worry about dropping frames or otherwise providing a "chunky" timing experience.
+AnimTaskMgr provides a simple way to maintain animation performance in web applications while giving your app a chance to get things done that may or may not have nothing to do with animation.
 
-Finally, AnimTskManager provides a schemes for tweaking the timing "feel" of animation activities and allows you to chain all types of activities together into complex actions like sliding a UI element into place, playing a sound and then blinking to indicate its readiness.
+AnimTaskMgr lets you toss tasks as functions into a queue that will execute as fast as it can while still *maintaining good frame rate* -- that is, it prioritizes frame rate *first,* over executing your code. If it takes multiple frames to get your tasks done, they will get done, but multiple frames will still get drawn. Just launch your task using the manager and it will do the rest -- you can fire and forget.
+
+For each frame, AnimTaskMgr will try to execute all the tasks in the queue; or, if it can't complete them within the time constraint, wait until next frame to continue working through the queue. This allows you to freely mix all kinds of tasks into your app without so much need to worry about dropping frames or otherwise providing a "chunky" timing experience.
+
+Finally, AnimTaskManager provides a schemes for tweaking the timing "feel" of animation activities and allows you to chain all types of activities together into complex actions like sliding a UI element into place, playing a sound and then blinking to indicate its readiness.
 
 ## Typical Use
 
@@ -107,11 +111,11 @@ where the parameters are:
 * `Duration` this is a desired duration of animation, in milliseconds (or zero, for infinite).
 * `Interp` this is a function that will accept a 0-1 time value and return a 0-1 value, possibly reshaped by splines or other means, to get more complex animation timing (e.g. "slow-in").
 
-Only the `AnimFunc` parameter is required. If you want to specify a `Duration` or `Interp,` be sure to use `null` for `WrapUpFunc` -- likewise, for no `Duration,` use zero and the function will iterate until the power goes out.
+Only the `AnimFunc` parameter is required. If you want to specify a `Duration` or `Interp` with no WrapUp, just be sure to use `null` for `WrapUpFunc` -- likewise, for no `Duration,` use zero and the function will iterate until the power goes out (or you `.halt()` it, or `.chain()` to something else, as we'll see later on below).
 
 ## Your AnimFunc
 
-The AnimFunc does whatever tasks you set it nibble-sized chunks. These tasks can be anything: animation on-screen, physics evaluations, audio processing, parts of a game AI, etc. By breaking your tasks into bite-sized chunks, you help ensure a smooth, responsive experience for the end user. An old truism from the game development world also applies to all modern web apps: *There are no good games with a bad frame rate.*
+The AnimFunc does whatever tasks you set it nibble-sized chunks. These tasks can be anything: animation on-screen, physics evaluations, audio processing, parts of a game AI, etc. By breaking your tasks into bite-sized chunks, you help ensure a smooth, responsive experience for the end user. 
 
 If an AnimFunc completes some larger task that might take many frames, return `true` to tell the AnimTaskMgr that the overall task is complete.
 
@@ -179,7 +183,7 @@ If you have a task "Tk" running on AnimTaskMgr "ATM," you could halt it any of t
 	Tk.chain(function() {});	// for infinite tasks with a wrapup function
 	ATM.discard(Tk);			// "hard stop": don't execute any wrapup or chain functions
 
-Typically after every frame, the AnimTaskManager will discard any halted or expired tasks. If you set ATM.selfCleaning to false, you will have to call ATM.autoClean() yourself from time to time. This can sometimes be more efficient if there are *lots* of regular task changes.
+Typically after every frame, the AnimTaskManager will discard any halted or expired tasks. If you set `ATM.selfCleaning` to `false`, you will have to call `ATM.autoClean()` yourself from time to time. This can sometimes be more efficient if there are *lots* of regular task changes.
 
 #### A Word on Synchronization
 
