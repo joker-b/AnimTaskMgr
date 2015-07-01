@@ -94,7 +94,7 @@ dad.launch(0); // dad is immortal
 
 var gAlpha = 0.05;
 ATM.launch(function animate(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
-	gAlpha = 0.06+ 0.05*Math.sin(SinceStartTime*0.00026);
+	gAlpha = 0.055+ 0.05*Math.sin(SinceStartTime*0.00016);
 },null,0);
 
 function animate() {
