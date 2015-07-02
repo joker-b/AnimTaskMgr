@@ -76,9 +76,9 @@ Orb.prototype.spawn = function() {
 };
 Orb.prototype.launch = function(Duration) {
 	var orb = this;
-	function animate(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
-		orb.angle = orb.startAngle + orb.speed*SinceStartTime;
-		var L = Math.floor(90*(1 - RelativeTime));
+	function animate(Clock) {
+		orb.angle = orb.startAngle + orb.speed*Clock.sinceStart;
+		var L = Math.floor(90*(1 - Clock.relative));
 		orb.color = 'hsl('+orb.hue+','+orb.sat+'%,'+L+'%)';
 		orb.setPos();
 		orb.draw();
@@ -93,8 +93,8 @@ var dad = new Orb(ctx,400,300, 0.0, 200,10, 0.0004, 1.0, null, 3500, 0);
 dad.launch(0); // dad is immortal
 
 var gAlpha = 0.05;
-ATM.launch(function animate(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
-	gAlpha = 0.055+ 0.05*Math.sin(SinceStartTime*0.00016);
+ATM.launch(function animate(Clock) {
+	gAlpha = 0.055+ 0.05*Math.sin(Clock.sinceStart*0.00016);
 },null,0);
 
 function animate() {

@@ -24,22 +24,61 @@
 //		we can make some pretty safe assumptions about validitiy of data, thus saving
 //		execution time by skipping error-checking.
 //
-function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager) { // WrapUp is optional
-	this.start = Date.now();
-	this.prev = this.start;
+
+function ATClock(Duration,Interp)
+{
+	this.now = Date.now();
 	this.count = 0;
-	this.animFunc = AnimFunc || null;
-	this.wrapFunc = WrapUpFunc || null;
+	this._reset();
+	this._t = 0;
 	this.duration = Duration || 0.0; // duration <=0 lasts until halted. otherwise, in milliseconds
 	this.interp = Interp || null; // Interp - function taks value returns 0-1
+	this.prev = this.start;
+	this.totalTime = 0;
+	this.frameTime = 0;
+	this.relative = 0;
+}
+ATClock.prototype._reset = function() {
+	this.start = this.now;
+	this.prev = this.start;
+};
+ATClock.prototype.tick = function()
+{
+	this._now = Date.now();
+	if (this.count === 0) {
+		this._reset();
+	}
+	this.sinceStart = this._now - this.start;
+	this.sinceLastFrame = this._now - this.prev;
+	if (this.duration>0) {
+		this._t = this.sinceStart/this.duration;
+	} else {
+		this._t = 0.0; // for _now
+	}
+	if (this.interp) {
+		this.relative = this.interp(this._t); // sloin, gamma, etc.
+	} else {
+		this.relative = this._t;
+	}
+};
+ATClock.prototype.tock = function()
+{
+	this.prev = this._now;
+	this.count += 1;
+	return (this._t >= 1);  // duration has been reached
+};
+
+////////////////////////////////////////////////////////
+
+function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager) { // WrapUp is optional
+	this.clock = new ATClock(Duration,Interp);
+	this.animFunc = AnimFunc || null;
+	this.wrapFunc = WrapUpFunc || null;
 	this.mgr = Manager;
 	this.active = true;
 	this.wrapReady = false;
 	this.chainTask = null;
 	//
-	this.now = 0;
-	this.totalTime = 0;
-	this.frameTime = 0;
 }
 
 ATask.prototype.animate = function() {
@@ -47,23 +86,10 @@ ATask.prototype.animate = function() {
 		return;
 	}
 	var t, ti, haltMe;
-	this.tNow = Date.now();
-	this.tTotal = this.tNow - this.start;
-	this.tFrame = this.tNow - this.tPrev;
-	this.tPrev = this.tNow;
-	if (this.duration>0) {
-		t = this.tTotal/this.duration;
-	} else {
-		t = 0.0; // for tNow
-	}
-	if ((this.interp !== undefined)&&(this.interp)) {
-		ti = this.interp(t); // sloin, gamma, etc.
-	} else {
-		ti = t;
-	}
+	this.clock.tick();
 	if (this.wrapReady) {
 		if (this.wrapFunc) {
-			this.wrapFunc(this.tNow, ti, this.tFrame, this.tTotal, this.count);
+			this.wrapFunc(this.clock);
 		}
 		this.wrapReady = false;
 		this.wrapFunc = null;
@@ -71,18 +97,17 @@ ATask.prototype.animate = function() {
 		return;
 	}
 	if (this.animFunc) {
-		haltMe = this.animFunc(this.tNow, ti, this.tFrame, this.tTotal,this.count);
+		haltMe = this.animFunc(this.clock);
 	} else {
 		haltMe = false;
 	}
-	this.count += 1;
-	if ( (t >= 1.0) || (haltMe === true) ) {
+	if ( (this.clock.tock()) || (haltMe === true) ) {
 		this._halt();
 	}
 };
 
 ATask.prototype.chain = function(AnimFunc,WrapUpFunc,Duration,Interp) {
-	var terp = Interp || this.interp;
+	var terp = Interp || this.clock.interp;
 	this.chainTask = new ATask(AnimFunc,WrapUpFunc,Duration,terp,this.mgr);
 	return this.chainTask;
 };

@@ -45,7 +45,7 @@ Below is some abbreviated code. It shows a typical example using THREE.js (THREE
 		//
 		// launch a process to spin the spinner, while we wait for other things
 		//
-		function spinSpinner(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
+		function spinSpinner(Clock) {
 			spinner.rotation.x += 0.001;
 			spinner.rotation.y += 0.002;
 		}
@@ -54,8 +54,8 @@ Below is some abbreviated code. It shows a typical example using THREE.js (THREE
 		//
 		// launch a process that will build 200 objects...
 		//
-		function addOneObject(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
-			if (Count >= 200) {
+		function addOneObject(Clock) {
+			if (Clock.count >= 200) {
 				return true; 			// signal that we're done
 			}
 			var newObj = build_obj();
@@ -63,7 +63,7 @@ Below is some abbreviated code. It shows a typical example using THREE.js (THREE
 			newObj.visible = false;
 			objParent.add(newObj);
 		}
-		function objectsReady(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
+		function objectsReady(Clock) {
 			// action to take now that we're done
 			spinner.visible = false;		// hide spinner
 			objParent.visible = true;		// show objects
@@ -92,13 +92,13 @@ In this case, the wrap-up function really is just  wrapping up. Wrap-up function
 
 ## Parameters: We Have Them!
 
-The functions we assign as paramaters to launch() expect several parameters:
+The functions we assign as paramaters to launch() expect a `Clock` object containing several parameters:
 
-* `TimeNow` reports a time in milliseconds that marks when the function execution begins.
-* `RelativeTime` -- if the function has a specified duration (more on this later), then `RelativeTime` will be a value ranged from zero to one indicating the overall place in the animation. This value is not clamps to the [0-1] range, and may be shaped by interpolators (again, more later). Otherwise zero.
-* `SinceLastFrameTime` is the time, in milliseconds, since this function was last executed. Note that this might be different than the time between `animationRequestFrame()` calls since the task manager can spread tasks across multiple frames if needed to maintain frame rate.
-* `SinceStartTime` is the time elapsed, in milliseconds, since the function was `launch()`'ed.
-* `Count` counts the number of times this function has been executed (starting at zero).
+* `.now` reports a time in milliseconds that marks when the function execution begins.
+* `.relative` -- if the function has a specified duration (more on this later), then `RelativeTime` will be a value ranged from zero to one indicating the overall place in the animation. This value is not clamps to the [0-1] range, and may be shaped by interpolators (again, more later). Otherwise zero.
+* `.sinceLastFrame` is the time, in milliseconds, since this function was last executed. Note that this might be different than the time between `animationRequestFrame()` calls since the task manager can spread tasks across multiple frames if needed to maintain frame rate.
+* `.sinceStart` is the time elapsed, in milliseconds, since the function was `launch()`'ed.
+* `.count` counts the number of times this function has been executed (starting at zero).
 
 We only used some of the parameters of `launch()` in this example. A complete call would be:
 
@@ -123,8 +123,8 @@ Consider this alternative to the first example, where we want to let the object 
 
 	// var objParent = new THREE.Object3D(); // already dedclared...
 	var objCount = 0;
-	function addObjects(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
-		while( ((Date.now()-TimeNow)<=6) && (objCount<200) ) {
+	function addObjects(Clock) {
+		while( ((Date.now()-Clock.now)<=6) && (objCount<200) ) {
 			var newObj = build_obj();
 			newObj.position.set(Math.random(),Math.random(),Math.random());
 			newObj.visible = false;
@@ -199,7 +199,7 @@ As mentioned earlier, if you don't specify an interpolator for a `.chain()` task
 
 You can also set a default interpolator for the AnimTaskMgr itself, by using the `.defaultInterpolator()` method. All new tasks added via `.launch()` that don't specify an interpolator will inherit the default you specify.
 
-### Why not use Tween.js or (insert package name) instead of AnimTaskMgr?
+### Why not use Tween.js or Web Workers or (insert package name) instead of AnimTaskMgr?
 
 AnimTaskMgr cam out of a desire to provide a way to trigger events based on any kind of timing: frame counting, elapsed time, time per frame, etc. You can use Tween.js's update() for some of this, but you carry all the baggage of Tween's parameter update mechanism, which I didn't need. Six of one, half-dozen of the other. I like Tween.js too, sometimes.
 
