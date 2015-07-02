@@ -17,7 +17,7 @@ function onWindowResize( event ) {
     camera.updateProjectionMatrix();
 }
 
-function mazeBuild(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
+function mazeBuild(Clock)
 {
 	if (maze === undefined) {
 		maze = new Maze(scene);
@@ -26,64 +26,66 @@ function mazeBuild(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
 	console.log('maze size '+maze.nodeList.length);
 	return true;
 }
-function mazeDisks(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
+function mazeDisks(Clock)
 {
-	if (Count >= maze.nodeList.length) {
-		console.log('lines drawn for '+Count);
+	if (Clock.count >= maze.nodeList.length) {
+		console.log('lines drawn for '+Clock.count);
 		return true;
 	}
-	maze.nodeList[Count].obj3d(maze.obj3d);
+	maze.nodeList[Clock.count].obj3d(maze.obj3d);
 }
-function mazeNeighbors(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
+function mazeNeighbors(Clock)
 {
-	if (Count >= maze.nodeList.length) {
-		console.log('neighbors done: '+Count);
+	if (Clock.count >= maze.nodeList.length) {
+		console.log('neighbors done: '+Clock.count);
 		return true;
 	}
 	var nCount = Math.floor(Math.random()*3 + 2.1); // neighbor count
-	maze.nearest2D(maze.nodeList[Count], nCount);
+	maze.nearest2D(maze.nodeList[Clock.count], nCount);
 }
-function mazeUpNeighbors(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
+function mazeUpNeighbors(Clock)
 {
-	if (Count >= (maze.nFloors-1)) {
-		console.log('floors done: '+Count+' of '+maze.nFloors);
+	if (Clock.count >= (maze.nFloors-1)) {
+		console.log('floors done: '+Clock.count+' of '+maze.nFloors);
 		return true;
 	}
-	maze.nearestFloor(Count);
+	maze.nearestFloor(Clock.count);
 };
 
-function mazeLines(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
+function mazeLines(Clock)
 {
-	if (Count >= maze.nodeList.length) {
-		console.log('lines drawn for '+Count);
+	if (Clock.count >= maze.nodeList.length) {
+		console.log('lines drawn for '+Clock.count);
 		return true;
 	}
-	maze.nodeList[Count].drawEdges(maze.obj3d);
+	maze.nodeList[Clock.count].drawEdges(maze.obj3d);
 }
-function mazeG(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
+function mazeG(Clock)
 {
 	maze.makeGraph();
 	console.log('graph built');
 	return true;
 }
 
-function mazePaths(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
+function mazePaths(Clock)
 {
 	var path = null;
 	var srcNode = maze.randNode(), destNode;
-	var pathI = 0;
 	var perLink = 300;
 	var rampTime = 900;
 	var vec = new THREE.Vector3();
     var reptCt = 0;
-    function choosePath() {
+    function choosePath(Clock) {
     	path = null;
-		while (path == null) {
-			destNode = maze.randNode();
+		while (path === null) {
+	    	destNode = srcNode;
+			while (destNode === srcNode) {
+				destNode = maze.randNode();
+			}
 			path = maze.path(srcNode,destNode);
 			//console.log(path);
 		}
-		path = [srcNode].concat(path);
+		// path = [srcNode].concat(path);
 		mark.position.copy(maze.nodes[srcNode].pos);
 		s1.position.copy(maze.nodes[srcNode].pos);
 		s2.position.copy(maze.nodes[destNode].pos);
@@ -91,24 +93,24 @@ function mazePaths(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
 	    s2.visible = true;
 		return true;
 	}
-	function rampUp(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
+	function rampUp(Clock) {
 		vec.copy(maze.nodes[destNode].pos);
 		vec.sub(maze.nodes[srcNode].pos);
-		vec.multiplyScalar(RelativeTime);
+		vec.multiplyScalar(Clock.relative);
 		vec.add(maze.nodes[srcNode].pos);
 		s2.position.copy(vec);
 		s1.position.copy(maze.nodes[srcNode].pos);
 		mark.position.copy(maze.nodes[srcNode].pos);
-		s1.material.opacity = RelativeTime;
-		s2.material.opacity = RelativeTime;
+		s1.material.opacity = Clock.relative;
+		s2.material.opacity = Clock.relative;
 	}
-	function rampDown(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
-		s1.material.opacity = 1 - RelativeTime;
-		s2.material.opacity = 1 - RelativeTime;
+	function rampDown(Clock) {
+		s1.material.opacity = 1 - Clock.relative;
+		s2.material.opacity = 1 - Clock.relative;
 		srcNode = destNode;
 	}
-	function traversePath(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count) {
-		var px = SinceStartTime/perLink;
+	function traversePath(Clock) {
+		var px = Clock.sinceStart/perLink;
 		var nLink = Math.floor(px);
 		if (nLink >= (path.length-1)) {
 			//console.log("done");
@@ -128,7 +130,7 @@ function mazePaths(TimeNow,RelativeTime,SinceLastFrameTime,SinceStartTime,Count)
 		mark.visible = true;
 		mark.position.copy(vec);
 	}
-	function rept() {
+	function rept(Clock) {
 		//console.log('repeat');
 		if (reptCt < 4) {
 			ATM.launch(choosePath).

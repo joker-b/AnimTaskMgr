@@ -39,7 +39,7 @@ function ATClock(Duration,Interp)
 	this.relative = 0;
 }
 ATClock.prototype._reset = function() {
-	this.start = this.now;
+	this.start = this._now;
 	this.prev = this.start;
 };
 ATClock.prototype.tick = function()
@@ -85,8 +85,11 @@ ATask.prototype.animate = function() {
 	if (!this.active) {
 		return;
 	}
-	var t, ti, haltMe;
+	var haltMe;
 	this.clock.tick();
+	//if (this.clock.count == 0) {
+	//	console.log(this.clock.sinceStart);
+	//}
 	if (this.wrapReady) {
 		if (this.wrapFunc) {
 			this.wrapFunc(this.clock);
