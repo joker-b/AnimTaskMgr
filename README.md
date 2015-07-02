@@ -162,16 +162,28 @@ The `.chain()` method taks exactly the same arguments as the `.launch()` method.
 
 Since both methods return the new task, so it's strightforward to build up longer sequences by dot-chaining:
 
-	AnimTaskMgr.launch(FuncA,null,5.0)
-				.chain(FuncB,null,1.0)
-				.chain(FuncC,null,2.0)
-				.chain(FuncD,WrapABCD,5.0);
+	tkd = AnimTaskMgr.launch(FuncA,null,5.0)
+						.chain(FuncB,null,1.0)
+						.chain(FuncC,null,2.0)
+						.chain(FuncD,WrapABCD,5.0);
 
 Will run the four tasks in sequence. Of course, if any task runs infinitely, none of its chained children would ever execute! For this reason, if `.chain()` is executed on a task that *does* have an infinite duration (e.g., `Duration === 0`), then the parent task will immediately stop and chain on the next animation frame, just as if its duration were complete.
 
+#### Talking to Your (Chained) Kids
+
+In the `.chain` example immediately above, what if the duration of `FuncC` needed to be adjusted by something happening in `FuncB`? The stack above will only return the task of `FuncD` so the other objects are invisible. Fortunately, we can get task identifiers both up and down the `chain()` chain.
+
+Using `.rootTask()` will return chain "parents" -- you can add a count as a qualifier, to after the above example, running
+
+	tkd.rootTask(3)
+
+would return the value of the root `.launch()` task. Likewise, `.chainedTask()` aims "down" the list of chained tasks. If `tkd` was in the scope of the example functions, then `FuncB` could adjust the duration of `FuncC` by something like this:
+
+	tkd.rootTask().setDuration(5000);
+
 ### WrapUp Functions
 
-When a task has a WrapupFunc defined, the WrapUp will execute on the next animation frame after the task completes. It will also execute before any chained task begins.
+When a task has a WrapupFunc defined, the WrapUp will execute *once* on the next animation frame after the task completes. It will also execute before any chained task begins.
 
 ### Halting Tasks and Manager Cleaning
 

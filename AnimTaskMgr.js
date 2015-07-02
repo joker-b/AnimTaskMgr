@@ -70,7 +70,7 @@ ATClock.prototype.tock = function()
 
 ////////////////////////////////////////////////////////
 
-function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager) { // WrapUp is optional
+function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager,Root) { // WrapUp is optional
 	this.clock = new ATClock(Duration,Interp);
 	this.animFunc = AnimFunc || null;
 	this.wrapFunc = WrapUpFunc || null;
@@ -78,6 +78,7 @@ function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager) { // WrapUp is optio
 	this.active = true;
 	this.wrapReady = false;
 	this.chainTask = null;
+	this.chainRoot = Root || null;
 	//
 }
 
@@ -111,7 +112,7 @@ ATask.prototype.animate = function() {
 
 ATask.prototype.chain = function(AnimFunc,WrapUpFunc,Duration,Interp) {
 	var terp = Interp || this.clock.interp;
-	this.chainTask = new ATask(AnimFunc,WrapUpFunc,Duration,terp,this.mgr);
+	this.chainTask = new ATask(AnimFunc,WrapUpFunc,Duration,terp,this.mgr,this);
 	return this.chainTask;
 };
 
@@ -125,6 +126,27 @@ ATask.prototype.chainedTask = function(N) {
 		c = c.chainTask;
 	}
 	return c;
+};
+
+ATask.prototype.rootTask = function(N) {
+	var i, c, n = N | 1;
+	c = this;
+	for (i=0; i<n; i+=1) {
+		if (!c.chainRoot) {
+			break;
+		}
+		c = c.chainRoot;
+	}
+	return c;
+};
+
+ATask.prototype.setDuration = function(Duration) {
+	var d = Duration || 0;
+	this.clock.duration = d;
+};
+
+ATask.prototype.setInterp = function(Interp) {
+	this.clock.interp = Interp;
 };
 
 ATask.prototype._halt = function() {
