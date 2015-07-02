@@ -115,6 +115,18 @@ ATask.prototype.chain = function(AnimFunc,WrapUpFunc,Duration,Interp) {
 	return this.chainTask;
 };
 
+ATask.prototype.chainedTask = function(N) {
+	var i, c, n = N | 1;
+	c = this;
+	for (i=0; i<n; i+=1) {
+		if (!c.chainTask) {
+			break;
+		}
+		c = c.chainTask;
+	}
+	return c;
+};
+
 ATask.prototype._halt = function() {
 	if (this.wrapFunc) {  // if there's a wrapFunc to that first
 		this.wrapReady = true; // execute wrapFunc on next ieration
