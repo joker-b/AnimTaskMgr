@@ -77,7 +77,7 @@ function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager,Root) { // WrapUp is 
 	this.mgr = Manager;
 	this.active = true;
 	this.wrapReady = false;
-	this.chainTask = null;
+	this.chainTasks = [];
 	this.chainRoot = Root || null;
 	//
 }
@@ -112,26 +112,27 @@ ATask.prototype.animate = function() {
 
 ATask.prototype.chain = function(AnimFunc,WrapUpFunc,Duration,Interp) {
 	var terp = Interp || this.clock.interp;
-	this.chainTask = new ATask(AnimFunc,WrapUpFunc,Duration,terp,this.mgr,this);
-	return this.chainTask;
+	var chTk = new ATask(AnimFunc,WrapUpFunc,Duration,terp,this.mgr,this);
+	this.chainTasks.push(chTk);
+	return chTk;
 };
 
-ATask.prototype.chainedTask = function(N) {
-	var i, c, n = N | 1;
+ATask.prototype.chainedTask = function(Levels,Item) {
+	var i, c, levels = Levels | 1, item = Item || 0;
 	c = this;
-	for (i=0; i<n; i+=1) {
-		if (!c.chainTask) {
+	for (i=0; i<levels; i+=1) {
+		if (c.chainTasks.length<1) {
 			break;
 		}
-		c = c.chainTask;
+		c = c.chainTasks[item];
 	}
 	return c;
 };
 
-ATask.prototype.rootTask = function(N) {
-	var i, c, n = N | 1;
+ATask.prototype.rootTask = function(Levels) {
+	var i, c, levels = Levels | 1;
 	c = this;
-	for (i=0; i<n; i+=1) {
+	for (i=0; i<levels; i+=1) {
 		if (!c.chainRoot) {
 			break;
 		}
@@ -155,13 +156,13 @@ ATask.prototype._halt = function() {
 		return;
 	} 
 	this.active = false;  // otherwise halt immediately
-	if (this.chainTask) {
-		this.mgr.addChainTask(this.chainTask);
+	for (var i=0; i<this.chainTasks.length; i+=1) {
+		this.mgr.addChainTask(this.chainTasks[i]);
 	}
 };
 
 ATask.prototype.halt = function() {
-	this.chainTask = null; // kill any chained task(s)
+	this.chainTasks = []; // kill any chained task(s)
 	this._halt();
 };
 

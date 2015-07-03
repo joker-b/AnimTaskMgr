@@ -169,6 +169,10 @@ Since both methods return the new task, so it's strightforward to build up longe
 
 Will run the four tasks in sequence. Of course, if any task runs infinitely, none of its chained children would ever execute! For this reason, if `.chain()` is executed on a task that *does* have an infinite duration (e.g., `Duration === 0`), then the parent task will immediately stop and chain on the next animation frame, just as if its duration were complete.
 
+#### Parallel Chains
+
+A single task can have multiple chains. Just call `.chain()` as much as you like. This can be especailly handy when the different chains items have different scopes or expected durations. All chained tasks will enter into the managers time stream on the same frame, in the order you defined them.
+
 #### Talking to Your (Chained) Kids
 
 In the `.chain` example immediately above, what if the duration of `FuncC` needed to be adjusted by something happening in `FuncB`? The stack above will only return the task of `FuncD` so the other objects are invisible. Fortunately, we can get task identifiers both up and down the `chain()` chain.
@@ -177,9 +181,11 @@ Using `.rootTask()` will return chain "parents" -- you can add a count as a qual
 
 	tkd.rootTask(3)
 
-would return the value of the root `.launch()` task. Likewise, `.chainedTask()` aims "down" the list of chained tasks. If `tkd` was in the scope of the example functions, then `FuncB` could adjust the duration of `FuncC` by something like this:
+would return the value of the root `.launch()` task. If `tkd` was in the scope of the example functions, then `FuncB` could adjust the duration of `FuncC` by something like this:
 
 	tkd.rootTask().setDuration(5000);
+
+Likewise, `.chainedTask()` peers "forward" along the list of chained tasks. In additional to a levels-away count, you can also add an optional index to select a specific chained task if the parent has multiple parallel chains. You can get as complicated or simple as you feel.
 
 ### WrapUp Functions
 
