@@ -203,9 +203,15 @@ If you have a task "Tk" running on AnimTaskMgr "ATM," you could halt it any of t
 
 Typically after every frame, the AnimTaskManager will discard any halted or expired tasks. If you set `ATM.selfCleaning` to `false`, you will have to call `ATM.autoClean()` yourself from time to time. This can sometimes be more efficient if there are *lots* of regular task changes.
 
-#### A Word on Synchronization
+## A Word on Synchronization
 
 Tasks that launch together may not *always* complete together, depending on externalities -- interupts, other tasks that take too long and push their neighbors into the next frame, etc. If you need close synchromization -- if the result of some task depends upon some other task that's not directly in its own chain -- you'll need to apply the same sorts of strategies you would with any other sort of asychronous web process, because that's really what tasks are.
+
+## The Time Limit
+
+60 frames per second animation means frame times of around 16 milliseconds each. By default, AnimTaskMgr restricts its activities to 12ms (a really long task can mess this up). This leaves you enough headroom to do other tings, like, oh, actually draw the page. Some counsel for even tighter limits: as little as 6ms. Or maybe you don't mind running at a low rate if the correctness is right. You can change the limit for AnimTaskMgr: use `.setTimeLimit()` and set it to the desired limit, in millseconds.
+
+Note: making the limit shorter won't speed up your animation if you're already running at 60fps -- all present-day browsers are limited to that rate.
 
 ## Interpolators
 

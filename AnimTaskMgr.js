@@ -192,6 +192,13 @@ AnimTaskMgr.prototype.resume = function() {
 	this.paused = true;
 };
 
+AnimTaskMgr.prototype.setTimeLimit = function(T) {
+	if (T !== undefined && T > 0) {
+		this.limit = T;
+	}
+	return this.limit;
+};
+
 AnimTaskMgr.prototype.addTask = function(Tk) {
 	this.tasks.push(Tk);
 	return Tk; // return the new tasks in case the clinet wants to mess with it
