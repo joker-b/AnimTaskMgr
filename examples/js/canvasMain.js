@@ -4,11 +4,20 @@
 
 'use strict';
 
+var dad;
 var ATM = new AnimTaskMgr();
 
 var cv = document.getElementById('cvMain');
 var ctx = cv.getContext('2d');
 
+function onWindowResize( event ) {
+	if (dad !== undefined) {
+		var WIDTH = window.innerWidth / 2;
+		var HEIGHT = window.innerHeight / 2;
+		dad.cx = WIDTH;
+		dad.cy = HEIGHT;
+	}
+}
 
 function Orb(Ctx,cx,cy,A,BigR,InR,Speed,Alpha,Parent,KidLife,ParentAngle) {
 	this.ctx = Ctx;  // context
@@ -86,10 +95,11 @@ Orb.prototype.launch = function(Duration) {
 			orb.spawn();
 		}
 	}
+	window.addEventListener( 'resize', onWindowResize, false );
 	ATM.launch(animate,null,Duration);
 };
 
-var dad = new Orb(ctx,400,300, 0.0, 200,10, 0.0004, 1.0, null, 3500, 0);
+dad = new Orb(ctx,400,300, 0.0, 200,10, 0.0004, 1.0, null, 3500, 0);
 dad.launch(0); // dad is immortal
 
 var gAlpha = 0.05;
