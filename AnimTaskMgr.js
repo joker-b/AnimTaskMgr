@@ -50,16 +50,8 @@ ATClock.prototype.tick = function()
 	}
 	this.sinceStart = this._now - this.start;
 	this.sinceLastFrame = this._now - this.prev;
-	if (this.duration>0) {
-		this._t = this.sinceStart/this.duration;
-	} else {
-		this._t = 0.0; // for _now
-	}
-	if (this.interp) {
-		this.relative = this.interp(this._t); // sloin, gamma, etc.
-	} else {
-		this.relative = this._t;
-	}
+	this._t = (this.duration>0) ? (this.sinceStart/this.duration) : 0.0;
+	this.relative = (this.interp) ? this.interp(this._t) : this._t;
 };
 ATClock.prototype.tock = function()
 {
@@ -79,7 +71,6 @@ function ATask(AnimFunc,WrapUpFunc,Duration,Interp,Manager,Root) { // WrapUp is 
 	this.wrapReady = false;
 	this.chainTasks = [];
 	this.chainRoot = Root || null;
-	//
 }
 
 ATask.prototype.animate = function() {
@@ -173,17 +164,14 @@ ATask.prototype.halt = function() {
 function AnimTaskMgr() {
 	this.tasks = [];
 	this.chainList = [];
-	this.N = 0;
-	this.limit = 12; // 12 ms
-	this.selfCleaning = true;
-	//
-	this.paused = false;
-	//
-	this.defInterp = null;
-	//
-	this._t = 0;
-	this._I = 0; 
 }
+AnimTaskMgr.prototype._t = 0;
+AnimTaskMgr.prototype._I = 0;
+AnimTaskMgr.prototype.defInterp = null;
+AnimTaskMgr.prototype.selfCleaning = true;
+AnimTaskMgr.prototype.limit = 12;
+AnimTaskMgr.prototype.N = 0;
+AnimTaskMgr.prototype.paused = false;
 
 AnimTaskMgr.prototype.pause = function() {
 	this.paused = true;

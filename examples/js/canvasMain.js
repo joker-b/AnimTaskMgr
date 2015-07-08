@@ -4,10 +4,11 @@
 
 'use strict';
 
+var dad;
 var ATM = new AnimTaskMgr();
 
-var cv = document.getElementById('cvMain');
-var ctx = cv.getContext('2d');
+var canv = document.getElementById('cvMain');
+var ctx = canv.getContext('2d');
 
 
 function Orb(Ctx,cx,cy,A,BigR,InR,Speed,Alpha,Parent,KidLife,ParentAngle) {
@@ -86,10 +87,30 @@ Orb.prototype.launch = function(Duration) {
 			orb.spawn();
 		}
 	}
+	window.addEventListener( 'resize', onWindowResize, false );
 	ATM.launch(animate,null,Duration);
 };
 
-var dad = new Orb(ctx,400,300, 0.0, 200,10, 0.0004, 1.0, null, 3500, 0);
+dad = new Orb(ctx,400,300, 0.0, 200,10, 0.0004, 1.0, null, 3500, 0);
+function onWindowResize( event ) {
+	canv.width= Math.max(300, window.innerWidth - 20);
+	canv.height = Math.max(200,window.innerHeight - 70);
+	var midX = window.innerWidth / 2;
+	var midY = window.innerHeight / 2;
+	var prevX = dad.cx;
+	var prevY = dad.cy;
+	ATM.launch(function(Clock) {
+		dad.cx = prevX + Clock.relative * (midX-prevX);
+		dad.cy = prevY + Clock.relative * (midY-prevY);
+	},function(Clock) {
+		dad.cx=midX;
+		dad.cy=midY;
+	},3500, function(T) {
+		T = Math.min(Math.max(0,T),1.0);
+		return T*T*(3 - 2*T);
+	});
+}
+onWindowResize(null);
 dad.launch(0); // dad is immortal
 
 var gAlpha = 0.05;
@@ -101,7 +122,7 @@ function animate() {
 	requestAnimationFrame(animate);
 	ctx.fillStyle = "#000";
 	ctx.globalAlpha = gAlpha;
-	ctx.fillRect(0,0,800,600);
+	ctx.fillRect(0,0,canv.width,canv.height);
 	ATM.animate();
 }
 
