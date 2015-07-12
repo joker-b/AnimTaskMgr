@@ -9,10 +9,13 @@ var con = document.getElementById('svgMain');
 function Bounce(SvgDoc,Parent)
 {
 	this.shape = SvgDoc.createElementNS(svgns, 'circle');
-	this.sx = Math.random() * 600;
-	this.sy = Math.random() * 400;
-	this.dx = Math.random() * 600;
-	this.dy = Math.random() * 400;
+	this.pts = [];
+	for (var i=0; i<4; i+=1) {
+		this.pts.push({
+			x: Math.random() * 600,
+			y: Math.random() * 400
+		});
+	}
 	this.radius = 20;
 	this.col = 0x7f7f7f + Math.floor(Math.random() * 0x808080);
 	this.animate(0);
@@ -20,8 +23,16 @@ function Bounce(SvgDoc,Parent)
 	this.adjDrawSettings();
 }
 Bounce.prototype.animate = function(T) {
-	this.cx = this.sx + T * (this.dx-this.sx);
-	this.cy = this.sy + T * (this.dy-this.sy);
+	var iT = 1.0 - T;
+	var T2 = T * T;
+	var iT2 = iT * iT;
+	var p = [T*T2, iT*T2, iT2*T, iT*iT2];
+	this.cx = 0;
+	this.cy = 0;
+	for (var i=0; i<4; i+=1) {
+		this.cx += p[i]*this.pts[i].x;
+		this.cy += p[i]*this.pts[i].y;
+	}
 	this.adjDrawSettings();
 };
 Bounce.prototype.animTask = function(Clock) {
@@ -29,7 +40,7 @@ Bounce.prototype.animTask = function(Clock) {
 };
 Bounce.prototype.launchAnim = function(ATMgr) {
 	var bnc = this;
-	ATMgr.launch(function(Clock) {bnc.animate(Clock.relative)},null,2000);
+	ATMgr.launch(function(Clock) {bnc.animate(Clock.relative)},null,Math.floor(20000+Math.random()*5000));
 };
 Bounce.prototype.adjDrawSettings = function() {
 	this.shape.setAttributeNS(null, 'cx', this.cx);
