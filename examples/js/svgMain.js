@@ -12,10 +12,8 @@ function smoothstep(edge0,edge1,x) {
 	return t * t * (3.0 - 2.0 * t);
 }
 
-function Bounce(SvgDoc,Parent)
+function Bounce(Svg)
 {
-	this.mainShape = SvgDoc.createElementNS(svgns, 'circle');
-	this.debugLines = SvgDoc.createElementNS(svgns, 'polyLine');
 	this.pts = [];
 	for (var i=0; i<4; i+=1) {
 		this.pts.push({
@@ -32,10 +30,17 @@ function Bounce(SvgDoc,Parent)
 	this.blue = 0;
 	this.col = this.colorString();
 	//console.log(this.col);
+	this.debugLines = Svg.polyline(
+		this.pts[0].x, this.pts[0].y,
+		this.pts[1].x, this.pts[1].y,
+		this.pts[2].x, this.pts[2].y,
+		this.pts[3].x, this.pts[3].y
+		);
+	this.mainShape = Svg.circle(this.pts[0].x,this.pts[0].y,this.radius);
 	this.animate(0);
 	this.adjDrawSettings();
-	Parent.appendChild(this.mainShape);
-	Parent.appendChild(this.debugLines);
+	//Parent.appendChild(this.mainShape);
+	//Parent.appendChild(this.debugLines);
 };
 Bounce.prototype.animate = function(T) {
 	var t = Math.max(0.0,Math.min(T,1.0) );
@@ -49,7 +54,7 @@ Bounce.prototype.animate = function(T) {
 		this.cx += p[i]*this.pts[i].x;
 		this.cy += p[i]*this.pts[i].y;
 	}
-	var fade = 0.25;
+	var fade = 0.1;
 	var brite = smoothstep(0,fade,t) * (1-smoothstep((1-fade),1,t));
 	this.red = this.nRed * brite;
 	this.green = this.nGreen * brite;
@@ -61,15 +66,15 @@ Bounce.prototype.animate = function(T) {
 	this.adjDrawSettings();
 };
 Bounce.prototype.launchAnim = function() {
-	/*var temp = [this.pts[0].x, this.pts[0].y];
+	var temp = [this.pts[0].x, this.pts[0].y];
 	this.pts[0].x = this.pts[3].x;
 	this.pts[0].y = this.pts[3].y;
 	this.pts[3].x = temp[0];
-	this.pts[3].y = temp[1]; */
+	this.pts[3].y = temp[1];
 	ATM.launch(
 		function(Clock) {this.animate(Clock.relative);}.bind(this),
 		function(Clock) {this.launchAnim(ATM);}.bind(this),
-		Math.floor(2000+Math.random()*3000));
+		Math.floor(1000+Math.random()*2000));
 };
 Bounce.prototype.colorString = function(R,G,B) {
 	var r = R || this.red;
@@ -82,30 +87,29 @@ Bounce.prototype.colorString = function(R,G,B) {
 	return ('#'+c.toString(16));
 };
 Bounce.prototype.adjDrawSettings = function() {
-	var p = "";
+	var p = [];
 	for (var i=0; i<4; i+=1) {
-		p = p + this.pts[i].x+','+this.pts[i].y + ((i===3)?'':' ');
+		p.push(this.pts[i].x);
+		p.push(this.pts[i].y);
 	}
-	//console.log('"'+p+'"');
-	this.debugLines.setAttributeNS(null, 'fill', 'none');
-	this.debugLines.setAttributeNS(null, 'stroke-width', 2);
-	this.debugLines.setAttributeNS(null, 'points', p);
-	this.debugLines.style.stroke = 'blue'; // this.col);
-	this.mainShape.setAttributeNS(null, 'cx', this.cx);
-	this.mainShape.setAttributeNS(null, 'cx', this.cx);
-	this.mainShape.setAttributeNS(null, 'cy', this.cy);
-	this.mainShape.setAttributeNS(null, 'r',  this.radius);
-	this.mainShape.setAttributeNS(null, 'fill', this.col);
+	this.debugLines.attr({
+		'fill': 'none',
+		'stroke-width': 1,
+		'stroke': this.col,
+		'points': p
+	});
+	this.mainShape.attr({
+		'cx': this.cx,
+		'cy': this.cy,
+		'r':  this.radius,
+		'fill': this.col,
+	});
 };
 
-var svgDocument = document;
-var svg = svgDocument.createElementNS(svgns, 'svg');
-svg.setAttributeNS(null, 'width', 600);
-svg.setAttributeNS(null, 'height', 400);
-svg.setAttributeNS(null, 'viewBox', '0 0 600 400');
-con.appendChild(svg);
-for (var i=0; i<2; i+=1) {
-	var b = new Bounce(svgDocument,svg);
+var svg = Snap('#svgATM');
+//con.appendChild(svg);
+for (var i=0; i<8; i+=1) {
+	var b = new Bounce(svg);
 	b.launchAnim();
 }
 
