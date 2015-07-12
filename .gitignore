@@ -1,3 +1,5 @@
 *.sublime-project
 *.sublime-workspace
 ToDo.txt
+app/bower_components/*
+bower_components/*

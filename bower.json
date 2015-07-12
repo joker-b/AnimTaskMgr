@@ -1,0 +1,28 @@
+{
+  "name": "AnimTaskMgr",
+  "main": "index.html",
+  "version": "0.0.0",
+  "homepage": "https://github.com/joker-b/AnimTaskMgr",
+  "authors": [
+    "Kevin Bjorke <kevin.bjorke+dev@gmail.com>"
+  ],
+  "description": "materials for AnimTaskMgr samples",
+  "keywords": [
+    "animation",
+    "SVG",
+    "Canvas",
+    "THREE"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "app/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "Snap.svg": "~0.4.1"
+  }
+}
