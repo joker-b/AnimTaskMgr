@@ -10,7 +10,7 @@ AnimTaskMgr lets you toss tasks as functions into a queue that will execute as f
 
 For each frame, AnimTaskMgr will try to execute all the tasks in the queue; or, if it can't complete them within the time constraint, wait until next frame to continue working through the queue. This allows you to freely mix all kinds of tasks into your app without so much need to worry about dropping frames or otherwise providing a "chunky" timing experience.
 
-Finally, AnimTaskManager provides a schemes for tweaking the timing "feel" of animation activities and allows you to chain all types of activities together into complex actions like sliding a UI element into place, playing a sound and then blinking to indicate its readiness.
+Finally, AnimTaskManager provides a schemes for tweaking the timing "feel" of animation activities and allows you to chain all types of activities together into complex this-then-that-then-that-then... actions, like sliding a UI element into place, playing a sound and then blinking to indicate its readiness.
 
 ## Typical Use
 
@@ -18,7 +18,7 @@ Here is a simple "tinkertoy" example.
 
 Let's assume that we have a lot of 3D objects to build at startup time, during which a 3D "spinner" indicates ongoing progress.
 
-Below is some abbreviated code. It shows a typical example using THREE.js (THREE.js is not at all required -- all animation schemes benefit). You'll see we start the `AnimTskMgr` then add a couple of tasks to it and just let the manager handle the grunt work during our animation loop. Done.
+Below is some abbreviated code. It shows a typical example using THREE.js (THREE.js is not at all required -- any perf-sensitive app can use AnimTaskMgr). You'll see we start the `AnimTskMgr` then add a couple of tasks to it and just let the manager handle the grunt work during our animation loop. Done.
 
 	var ATM = new AnimTaskMgr();
 
@@ -209,7 +209,7 @@ Tasks that launch together may not *always* complete together, depending on exte
 
 ## The Time Limit
 
-60 frames per second animation means frame times of around 16 milliseconds each. By default, AnimTaskMgr restricts its activities to 12ms (a really long task can mess this up). This leaves you enough headroom to do other tings, like, oh, actually draw the page. Some counsel for even tighter limits: as little as 6ms. Or maybe you don't mind running at a low rate if the correctness is right. You can change the limit for AnimTaskMgr: use `.setTimeLimit()` and set it to the desired limit, in millseconds.
+60 frames per second animation means frame times of around 16 milliseconds each. By default, AnimTaskMgr restricts its activities to 12ms (a really long task can mess this up). This leaves you enough headroom to do other tings, like, oh, actually draw the page. Some people counsel for even tighter limits: as little as 6ms. Or maybe you don't mind running at a low rate if the correctness is right. You can change the limit for AnimTaskMgr: use `.setTimeLimit()` and set it to the desired limit, in millseconds.
 
 Note: making the limit shorter won't speed up your animation if you're already running at 60fps -- all present-day browsers are limited to that rate.
 
@@ -225,5 +225,5 @@ You can also set a default interpolator for the AnimTaskMgr itself, by using the
 
 ### Why not use Tween.js or Web Workers or (insert package name) instead of AnimTaskMgr?
 
-AnimTaskMgr cam out of a desire to provide a way to trigger events based on any kind of timing: frame counting, elapsed time, time per frame, etc. You can use Tween.js's update() for some of this, but you carry all the baggage of Tween's parameter update mechanism, which I didn't need. Six of one, half-dozen of the other. I like Tween.js too, sometimes.
+AnimTaskMgr came out of a desire to provide a way to trigger events based on any "mixed" sort of timing: iteration counting, elapsed time, time per frame, etc. You can use Tween.js's update() for some of this, but you carry all the baggage of Tween's parameter update mechanism, which I didn't need. Six of one, half-dozen of the other. I like Tween.js too, sometimes.
 
