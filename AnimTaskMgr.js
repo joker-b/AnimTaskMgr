@@ -51,7 +51,8 @@ ATClock.prototype.tick = function()
 	this.sinceStart = this._now - this.start;
 	this.sinceLastFrame = this._now - this.prev;
 	this._t = (this.duration>0) ? (this.sinceStart/this.duration) : 0.0;
-	this.relative = (this.interp) ? this.interp(this._t) : this._t;
+	this._t = Math.min(1.0,this._t);								// don't overshoot
+	this.relative = (this.interp) ? this.interp(this._t) : this._t; // though interpolators can
 };
 ATClock.prototype.tock = function()
 {
